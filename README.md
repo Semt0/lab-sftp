@@ -1,4 +1,22 @@
 # Mini SFTP Client
+
+## Lab 4 collaboration
+
+This repository starts from [SOAR-PKU/lab-sftp](https://github.com/SOAR-PKU/lab-sftp),
+commit `23eebe212b11241c866fee33794b998e25223630`. The original assignment follows below.
+
+- [实现计划与代码框架（中文）](docs/implementation-plan.md): missing code, dependencies, proposed two-person ownership, milestones, and validation.
+- [协作约定](CONTRIBUTING.md): branches, reviews, and shared interfaces.
+- [Checkpoint 材料清单](checkpoint/README.md): CP1–CP6 evidence requirements.
+
+Status on 2026-11-16: the starter builds locally on macOS with GCC 16.2.0 and
+OpenSSL 3.6.4; all 28 `LAB` placeholders remain. Protocol interoperability has
+not been tested. The current source uses group14/SHA-256 and AES-CTR, while the
+assignment text below specifies group1/SHA-1 and AES-CBC; resolve this with the
+course staff before deciding the submission's algorithm suite.
+
+---
+
 Welcome to *Computer Networking*. In this lab, we will build a minimal Secure File Transfer Protocol (SFTP) client that can talk with real servers upon basic POSIX socket interfaces. After finishing this lab, you will (hopefully) get familiar with network application programming and some basic security concerns. We expect this lab takes you between 20 to 30 hours to complete.
 
 ![image info](image/cover.jpeg)
