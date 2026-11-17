@@ -7,21 +7,18 @@
 
 本次只做框架审查、实现计划和协作初始化；尚未实现任何 PT、未连接 SSH 服务器、未获得 CP 验收结果。
 
-## 1. 先解决算法要求与源码不一致
+## 1. 算法配置
 
-| 项目 | 2026 课件 / 上游 README | 当前源码 |
-| --- | --- | --- |
-| 密钥交换 | `diffie-hellman-group1-sha1` | `diffie-hellman-group14-sha256` |
-| 对称加密 | `aes256-cbc` | `aes256-ctr` |
-| 完整性校验 | `hmac-sha1` | `hmac-sha1` |
-| Host key | README 描述 `ssh-rsa` | 协商列表为 `ssh-rsa` |
+实现采用现有脚手架的算法配置：
 
-证据：`src/kex.c:25` 的 `supported_methods`；`ssh_select_kex()` 设置 group14 枚举；`src/dh.c:105` 初始化 group14 参数，`dh_compute_session_id()` 使用 SHA-256。底层加密表虽然包含 CBC 和 CTR，但 DH 部分不能只改一个算法名。
+| 项目 | 算法 |
+| --- | --- |
+| 密钥交换 | `diffie-hellman-group14-sha256` |
+| 对称加密 | `aes256-ctr` |
+| 完整性校验 | `hmac-sha1` |
+| Host key | `ssh-rsa` |
 
-- [ ] 两人先向助教确认提交应遵循当前框架还是课件旧套件，记录答复；本次未代为联系。
-- [ ] 答复前以当前源码套件作为开发基线，接口与通用逻辑可先推进，不能宣称已符合课件算法要求。
-- [ ] 若必须支持旧套件，另开任务一致修改 DH 群参数、交换哈希、KDF 类型、协商枚举和 cipher，并重复 CP2–CP6。
-- [ ] 测试服务器采用经确认的套件配置；仅在实验服务实例中调整兼容选项，不改其他服务的全局配置。
+- [ ] 测试服务器配置为支持上述算法套件。
 
 ## 2. 代码框架与调用顺序
 
@@ -120,7 +117,7 @@ client.c: main
 
 | 日期（北京时间） | A 工作 | B 工作 | 阶段出口 |
 | --- | --- | --- | --- |
-| 11/16 | 确认算法问题、构建环境、socket 契约 | 阅读 channel/SFTP，约定接口与证据格式 | 双方能编译；实验服务器方案明确 |
+| 11/16 | 确认构建环境、socket 契约 | 阅读 channel/SFTP，约定接口与证据格式 | 双方能编译；实验服务器方案明确 |
 | 11/17 | 版本交换与算法协商 | channel open/request、消息解析模拟测试 | CP1–CP2；channel 接口可评审 |
 | 11/18 | DH、密钥派生接线、NEWKEYS、MAC | channel 流读取、窗口、EOF；SFTP OPEN/CLOSE | 加密往返打通，收集 CP3 |
 | 11/19 | 密码认证、失败重试、支持上层联调 | SFTP READ/WRITE、ID/状态/偏移处理 | CP4；完成首次 CP5 联调 |

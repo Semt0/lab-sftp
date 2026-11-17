@@ -3,7 +3,7 @@
 ## Lab 4 collaboration
 
 This repository starts from [SOAR-PKU/lab-sftp](https://github.com/SOAR-PKU/lab-sftp),
-commit `23eebe212b11241c866fee33794b998e25223630`. The original assignment follows below.
+commit `23eebe212b11241c866fee33794b998e25223630`. The assignment below uses the starter's algorithm suite.
 
 - [实现计划与代码框架（中文）](docs/implementation-plan.md): missing code, dependencies, proposed two-person ownership, milestones, and validation.
 - [协作约定](CONTRIBUTING.md): branches, reviews, and shared interfaces.
@@ -11,9 +11,7 @@ commit `23eebe212b11241c866fee33794b998e25223630`. The original assignment follo
 
 Status on 2026-11-16: the starter builds locally on macOS with GCC 16.2.0 and
 OpenSSL 3.6.4; all 28 `LAB` placeholders remain. Protocol interoperability has
-not been tested. The current source uses group14/SHA-256 and AES-CTR, while the
-assignment text below specifies group1/SHA-1 and AES-CBC; resolve this with the
-course staff before deciding the submission's algorithm suite.
+not been tested.
 
 ---
 
@@ -190,7 +188,7 @@ Complete algorithm negotiation procedure.
 Show the negotiated cipher suite (it should be the only cipher suite we support).
 
 #### DH Key Exchange
-- We use diffie-hellman-group1-sha1 key exchange algorithm Check section 8 of RFC 4253 for detailed explanation.
+- We use the diffie-hellman-group14-sha256 key exchange algorithm. See section 8 of RFC 4253 for the DH exchange procedure and section 3 of RFC 8268 for group14-sha256.
 - The key exchange produces two values: a shared secret K, and an exchange hash H.  Encryption and authentication keys are derived from these. The exchange hash H from the first key exchange is additionally used as the session identifier, which is a unique identifier for this connection.
 - Encryption keys MUST be computed as a digest of the key exchange method specified hash.
 
@@ -235,7 +233,7 @@ SSH_MSG_NEWKEYS                21
 #### Encryption
 - The ciphers in each direction MUST run independently of each other. In practice however, it is RECOMMENDED that the same
    algorithm be used in both directions.
-- We only support AES256-CBC as the encryption algorithm.
+- We only support AES256-CTR as the encryption algorithm.
 
 #### Integrity
 - mac = MAC(key, sequence_number || unencrypted_packet)

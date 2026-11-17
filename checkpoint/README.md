@@ -5,7 +5,7 @@
 | 目录 | 验收要求 | 建议记录 |
 | --- | --- | --- |
 | `cp1/` | 展示服务器 identification string | 客户端日志和服务器版本 |
-| `cp2/` | 展示协商后的算法套件 | KEX、host key、两个方向的 cipher/MAC；写明算法要求差异如何解决 |
+| `cp2/` | 展示协商后的算法套件 | KEX、host key、两个方向的 cipher/MAC |
 | `cp3/` | 展示密钥交换后消息加密 | NEWKEYS 前后抓包截图及说明 |
 | `cp4/` | 服务器允许客户端登录 | 认证成功记录；另外测试错误密码后重试 |
 | `cp5/` | 成功打开 channel | 双方 channel ID、window、maxpacket；SFTP subsystem 成功回复 |
