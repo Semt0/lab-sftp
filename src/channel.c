@@ -558,7 +558,17 @@ int ssh_channel_read(ssh_channel channel, void *dest, uint32_t count) {
     while (count > 0) {
         if (ssh_buffer_get_len(buf) > 0) {
             /* try to read channel data from static buffer first */
-            // LAB: insert your code here.
+            effectivelen = MIN(count, ssh_buffer_get_len(buf));
+            if (ssh_buffer_get_data(buf, (uint8_t *)dest + nread,
+                                    effectivelen) != effectivelen) {
+                goto read_error;
+            }
+            nread += effectivelen;
+            count -= effectivelen;
+            if (count == 0 && ssh_buffer_get_len(buf) == 0) {
+                ssh_buffer_free(buf);
+                buf = NULL;
+            }
 
         } else {
             /* static buffer has insufficient data, read another
@@ -578,23 +588,91 @@ int ssh_channel_read(ssh_channel channel, void *dest, uint32_t count) {
             switch (type) {
                 case SSH_MSG_CHANNEL_WINDOW_ADJUST:
                     /* window adjust message could happen here */
-                    // LAB: insert your code here.
+                    if (rc != SSH_OK ||
+                        ssh_buffer_unpack(session->in_buffer, "d", &bytes_to_add) != SSH_OK ||
+                        bytes_to_add > UINT32_MAX - channel->remote_window) {
+                        ssh_set_error(SSH_FATAL, "invalid channel window adjustment\n");
+                        goto read_error;
+                    }
+                    channel->remote_window += bytes_to_add;
+                    break;
 
                 case SSH_MSG_CHANNEL_DATA:
-                    // LAB: insert your code here.
+                    if (rc != SSH_OK ||
+                        ssh_buffer_unpack(session->in_buffer, "S", &channel_data) != SSH_OK) {
+                        ssh_set_error(SSH_FATAL, "invalid channel data packet\n");
+                        goto read_error;
+                    }
+                    effectivelen = ssh_string_len(channel_data);
+                    if (effectivelen > channel->local_window ||
+                        effectivelen > channel->local_maxpacket ||
+                        ssh_buffer_get_len(session->in_buffer) != 0) {
+                        ssh_set_error(SSH_FATAL, "channel data exceeds limits or has trailing bytes\n");
+                        goto read_error;
+                    }
+                    if (ssh_buffer_reinit(buf) != SSH_OK ||
+                        ssh_buffer_add_data(buf, ssh_string_data(channel_data),
+                                            effectivelen) != SSH_OK) {
+                        goto read_error;
+                    }
+                    ssh_string_free(channel_data);
+                    channel_data = NULL;
+                    channel->local_window -= effectivelen;
+                    if (effectivelen < count &&
+                        grow_window(channel, count - effectivelen) != SSH_OK) {
+                        goto read_error;
+                    }
+                    break;
 
                 case SSH_MSG_CHANNEL_EOF:
-                    // LAB: insert your code here.
+                    if (rc != SSH_OK) goto read_error;
+                    channel->remote_eof = 1;
+                    ssh_buffer_free(buf);
+                    buf = NULL;
+                    return nread > 0 ? (int)nread : SSH_EOF;
 
                 case SSH_MSG_CHANNEL_CLOSE:
-                    // LAB: insert your code here.
+                    if (rc != SSH_OK) goto read_error;
+                    channel->remote_eof = 1;
+                    channel->local_eof = 1;
+                    rc = ssh_buffer_pack(session->out_buffer, "bd",
+                                         SSH_MSG_CHANNEL_CLOSE, channel->remote_channel);
+                    if (rc != SSH_OK || ssh_packet_send(session) != SSH_OK) {
+                        ssh_buffer_reinit(session->out_buffer);
+                        goto read_error;
+                    }
+                    ssh_buffer_free(buf);
+                    buf = NULL;
+                    return nread > 0 ? (int)nread : SSH_EOF;
 
                 case SSH_MSG_CHANNEL_REQUEST:
-                    // LAB: insert your code here.
+                    {
+                        uint8_t want_reply;
+                        if (rc != SSH_OK ||
+                            ssh_buffer_unpack(session->in_buffer, "Sb",
+                                               &req, &want_reply) != SSH_OK) {
+                            ssh_set_error(SSH_FATAL, "invalid channel request\n");
+                            goto read_error;
+                        }
+                        ssh_string_free(req);
+                        if (want_reply != 0) {
+                            rc = ssh_buffer_pack(session->out_buffer, "bd",
+                                                 SSH_MSG_CHANNEL_FAILURE,
+                                                 channel->remote_channel);
+                            if (rc != SSH_OK || ssh_packet_send(session) != SSH_OK) {
+                                ssh_buffer_reinit(session->out_buffer);
+                                goto read_error;
+                            }
+                        }
+                        break;
+                    }
 
                 default:
-                    // LAB: insert your code here.
-
+                    ssh_set_error(SSH_FATAL, "unexpected channel message while reading\n");
+                read_error:
+                    ssh_buffer_free(buf);
+                    buf = NULL;
+                    goto error;
             }
         }
     }

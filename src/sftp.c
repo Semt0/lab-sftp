@@ -236,7 +236,13 @@ sftp_file sftp_open(sftp_session sftp, const char *filename, int flags,
     id = sftp_get_new_id(sftp);
 
     /* pack a new SFTP packet and send it using `sftp_packet_write` */
-    // LAB: insert your code here.
+    rc = ssh_buffer_pack(buffer, "dsddd", id, filename, perm_flags,
+                         attr_flags, (uint32_t)mode);
+    if (rc != SSH_OK || sftp_packet_write(sftp, SSH_FXP_OPEN, buffer) < 0) {
+        ssh_set_error(SSH_FATAL, "can not send SFTP OPEN request\n");
+        ssh_buffer_free(buffer);
+        return NULL;
+    }
 
 
     response = sftp_packet_read(sftp);
@@ -248,13 +254,32 @@ sftp_file sftp_open(sftp_session sftp, const char *filename, int flags,
 
     switch (response->type) {
         case SSH_FXP_STATUS:
-            // LAB: insert your code here.
+            status = sftp_parse_status(response);
+            if (status == NULL || status->id != id || status->status == SSH_FX_OK) {
+                ssh_set_error(SSH_FATAL, "invalid SFTP OPEN status\n");
+            } else {
+                ssh_set_error(SSH_REQUEST_DENIED, "SFTP OPEN failed (status %u)\n",
+                              status->status);
+            }
+            sftp_status_free(status);
+            sftp_packet_free(response);
+            ssh_buffer_free(buffer);
+            return NULL;
 
         case SSH_FXP_HANDLE:
-            // LAB: insert your code here.
+            handle = sftp_parse_handle(response, id);
+            if (handle == NULL) {
+                ssh_set_error(SSH_FATAL, "invalid SFTP OPEN handle response\n");
+            }
+            sftp_packet_free(response);
+            ssh_buffer_free(buffer);
+            return handle;
 
         default:
-            // LAB: insert your code here.
+            ssh_set_error(SSH_FATAL, "unexpected SFTP OPEN response\n");
+            sftp_packet_free(response);
+            ssh_buffer_free(buffer);
+            return NULL;
 
     }
     return NULL;
@@ -302,6 +327,26 @@ int sftp_close(sftp_file file) {
 
     switch (response->type) {
         // LAB: insert your code here.
+        case SSH_FXP_STATUS:
+            status = sftp_parse_status(response);
+            rc = SSH_ERROR;
+            if (status == NULL || status->id != id) {
+                ssh_set_error(SSH_FATAL, "invalid SFTP CLOSE status\n");
+            } else if (status->status != SSH_FX_OK) {
+                ssh_set_error(SSH_REQUEST_DENIED, "SFTP CLOSE failed (status %u)\n",
+                              status->status);
+            } else {
+                rc = SSH_OK;
+            }
+            sftp_status_free(status);
+            sftp_packet_free(response);
+            sftp_file_free(file);
+            return rc;
+        default:
+            ssh_set_error(SSH_FATAL, "unexpected SFTP CLOSE response\n");
+            sftp_packet_free(response);
+            sftp_file_free(file);
+            return SSH_ERROR;
 
     }
 }
@@ -352,8 +397,46 @@ int32_t sftp_read(sftp_file file, void *buf, uint32_t count) {
     }
 
     switch (response->type) {
-        // LAB: insert your code here.
-
+        case SSH_FXP_DATA:
+            rc = ssh_buffer_unpack(response->payload, "dS", &recv_id, &data);
+            if (rc == SSH_OK && recv_id == id &&
+                ssh_buffer_get_len(response->payload) == 0) {
+                recvlen = ssh_string_len(data);
+                if (recvlen <= count && recvlen <= INT32_MAX &&
+                    (recvlen != 0 || count == 0) &&
+                    recvlen <= UINT64_MAX - file->offset) {
+                    if (recvlen != 0) {
+                        memcpy(buf, ssh_string_data(data), recvlen);
+                    }
+                    file->offset += recvlen;
+                    ssh_string_free(data);
+                    sftp_packet_free(response);
+                    return (int32_t)recvlen;
+                }
+            }
+            ssh_set_error(SSH_FATAL, "invalid SFTP READ data response\n");
+            if (data != NULL) ssh_string_free(data);
+            sftp_packet_free(response);
+            return SSH_ERROR;
+        case SSH_FXP_STATUS:
+            status = sftp_parse_status(response);
+            rc = SSH_ERROR;
+            if (status == NULL || status->id != id || status->status == SSH_FX_OK) {
+                ssh_set_error(SSH_FATAL, "invalid SFTP READ status\n");
+            } else if (status->status == SSH_FX_EOF) {
+                file->eof = 1;
+                rc = 0;
+            } else {
+                ssh_set_error(SSH_REQUEST_DENIED, "SFTP READ failed (status %u)\n",
+                              status->status);
+            }
+            sftp_status_free(status);
+            sftp_packet_free(response);
+            return rc;
+        default:
+            ssh_set_error(SSH_FATAL, "unexpected SFTP READ response\n");
+            sftp_packet_free(response);
+            return SSH_ERROR;
     }
     return SSH_ERROR;
 }
@@ -402,8 +485,29 @@ int32_t sftp_write(sftp_file file, const void *buf, uint32_t count) {
         }
 
         switch (response->type) {
-            // LAB: insert your code here.
-
+            case SSH_FXP_STATUS:
+                status = sftp_parse_status(response);
+                rc = SSH_ERROR;
+                if (nsend == (uint32_t)SSH_ERROR || status == NULL || status->id != id) {
+                    ssh_set_error(SSH_FATAL, "invalid SFTP WRITE exchange\n");
+                } else if (status->status != SSH_FX_OK) {
+                    ssh_set_error(SSH_REQUEST_DENIED, "SFTP WRITE failed (status %u)\n",
+                                  status->status);
+                } else if (nwrite > UINT64_MAX - file->offset) {
+                    ssh_set_error(SSH_FATAL, "SFTP WRITE offset overflow\n");
+                } else {
+                    file->offset += nwrite;
+                    nleft -= nwrite;
+                    rc = SSH_OK;
+                }
+                sftp_status_free(status);
+                sftp_packet_free(response);
+                if (rc != SSH_OK) return SSH_ERROR;
+                break;
+            default:
+                ssh_set_error(SSH_FATAL, "unexpected SFTP WRITE response\n");
+                sftp_packet_free(response);
+                return SSH_ERROR;
         }
     }
     return count - nleft;
