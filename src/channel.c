@@ -99,10 +99,53 @@ static int channel_open(ssh_channel channel, const char *type, uint32_t window,
         rc = ssh_buffer_get_u8(session->in_buffer, &reply_type);
         switch (reply_type) {
             case SSH_MSG_CHANNEL_OPEN_CONFIRMATION:
-                // LAB: insert your code here.
+                {
+                    uint32_t remote_channel;
+                    uint32_t remote_window;
+                    uint32_t remote_maxpacket;
+                    rc = ssh_buffer_unpack(session->in_buffer, "dddd",
+                                           &recipient_channel, &remote_channel,
+                                           &remote_window, &remote_maxpacket);
+                    if (rc != SSH_OK || recipient_channel != channel->local_channel) {
+                        ssh_set_error(SSH_FATAL, "invalid channel open confirmation\n");
+                        return SSH_ERROR;
+                    }
+                    if (remote_maxpacket <= 10) {
+                        ssh_set_error(SSH_FATAL, "remote channel packet limit is too small\n");
+                        return SSH_ERROR;
+                    }
+
+                    channel->remote_channel = remote_channel;
+                    channel->remote_window = remote_window;
+                    channel->remote_maxpacket = remote_maxpacket;
+                    LOG_NOTICE("channel opened: local=%u window=%u maxpacket=%u; "
+                               "remote=%u window=%u maxpacket=%u",
+                               channel->local_channel, channel->local_window,
+                               channel->local_maxpacket, channel->remote_channel,
+                               channel->remote_window, channel->remote_maxpacket);
+                    return SSH_OK;
+                }
 
             case SSH_MSG_CHANNEL_OPEN_FAILURE:
-                // LAB: insert your code here.
+                {
+                    char *language = NULL;
+                    rc = ssh_buffer_unpack(session->in_buffer, "ddss",
+                                           &recipient_channel, &reason_code,
+                                           &description, &language);
+                    if (rc != SSH_OK) {
+                        ssh_set_error(SSH_FATAL, "invalid channel open failure packet\n");
+                        return SSH_ERROR;
+                    }
+                    SAFE_FREE(description);
+                    SAFE_FREE(language);
+                    if (recipient_channel != channel->local_channel) {
+                        ssh_set_error(SSH_FATAL, "channel open failure has wrong recipient\n");
+                        return SSH_ERROR;
+                    }
+                    ssh_set_error(SSH_REQUEST_DENIED, "channel open refused (reason %u)\n",
+                                  reason_code);
+                    return SSH_ERROR;
+                }
 
             case SSH_MSG_GLOBAL_REQUEST:
                 /**
@@ -122,10 +165,37 @@ static int channel_open(ssh_channel channel, const char *type, uint32_t window,
                  * naming convention outlined in [SSH-ARCH].
                  *
                  */
-                // LAB: insert your code here.
+                {
+                    uint8_t want_reply;
+                    rc = ssh_buffer_unpack(session->in_buffer, "Sb", &req, &want_reply);
+                    if (rc != SSH_OK) {
+                        ssh_set_error(SSH_FATAL, "invalid global request\n");
+                        return SSH_ERROR;
+                    }
+                    ssh_string_free(req);
+                    if (want_reply != 0) {
+                        rc = ssh_buffer_pack(session->out_buffer, "b", SSH_MSG_REQUEST_FAILURE);
+                        if (rc != SSH_OK || ssh_packet_send(session) != SSH_OK) {
+                            ssh_buffer_reinit(session->out_buffer);
+                            return SSH_ERROR;
+                        }
+                    }
+                    continue;
+                }
 
             default:
-                // LAB: insert your code here.
+                if (rc == 1 && (reply_type == SSH_MSG_IGNORE || reply_type == SSH_MSG_DEBUG)) {
+                    continue;
+                }
+                if (rc != 1) {
+                    ssh_set_error(SSH_FATAL, "missing channel reply type\n");
+                } else if (reply_type == SSH_MSG_DISCONNECT) {
+                    ssh_set_error(SSH_REQUEST_DENIED, "server disconnected while opening channel\n");
+                } else {
+                    ssh_set_error(SSH_FATAL, "unexpected channel open reply: %u\n",
+                                  (unsigned int)reply_type);
+                }
+                return SSH_ERROR;
 
         }
     }
