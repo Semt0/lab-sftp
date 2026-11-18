@@ -196,8 +196,47 @@ int receive_id_str(ssh_session session) {
     /* according to RFC 4253 the max banner length is 255 */
     for (int i = 0; i < 256; ++i) {
         ssh_socket_read(session->socket, &buffer[i], 1);
-        // LAB: insert your code here.
+        bool is_identification = i >= 3 && memcmp(buffer, "SSH-", 4) == 0;
+        if (buffer[i] != '\n') {
+            if (i == 254) {
+                if (is_identification) return SSH_ERROR;
+                --i;
+            }
+            continue;
+        }
+        if (!is_identification) {
+            i = -1;
+            continue;
+        }
 
+        char *line_end = buffer + i;
+        if (line_end[-1] == '\r') --line_end;
+        if (i >= 8 && memcmp(buffer, "SSH-2.0-", 8) == 0 &&
+            line_end != buffer + i) {
+            ptr = buffer + 8;
+        } else if (i >= 9 && memcmp(buffer, "SSH-1.99-", 9) == 0) {
+            ptr = buffer + 9;
+        } else {
+            return SSH_ERROR;
+        }
+
+        if (ptr >= line_end || *ptr == ' ') return SSH_ERROR;
+        for (; ptr < line_end && *ptr != ' '; ++ptr) {
+            unsigned char ch = *ptr;
+            if (ch < 0x21 || ch > 0x7e || ch == '-') return SSH_ERROR;
+        }
+        for (; ptr < line_end; ++ptr) {
+            unsigned char ch = *ptr;
+            if (ch < 0x20 || ch == 0x7f) return SSH_ERROR;
+        }
+
+        *line_end = '\0';
+        char *id = strdup(buffer);
+        if (id == NULL) return SSH_ERROR;
+        SAFE_FREE(session->server_id_str);
+        session->server_id_str = id;
+        LOG_NOTICE("server identification: %s", id);
+        return SSH_OK;
     }
     /* this line should not be reached */
     return SSH_ERROR;
