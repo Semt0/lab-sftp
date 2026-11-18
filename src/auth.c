@@ -122,17 +122,103 @@ int ssh_userauth_password(ssh_session session, const char *password) {
         ssh_buffer_get_u8(session->in_buffer, &type);
         switch (type) {
             case SSH_MSG_USERAUTH_BANNER:
-                // LAB: insert your code here.
+                {
+                    char *message = NULL;
+                    char *language = NULL;
+                    rc = ssh_buffer_unpack(session->in_buffer, "ss",
+                                           &message, &language);
+                    if (rc != SSH_OK) {
+                        ssh_set_error(SSH_FATAL, "invalid authentication banner\n");
+                        goto error;
+                    }
+
+                    for (unsigned char *ch = (unsigned char *)message;
+                         *ch != '\0'; ++ch) {
+                        if ((*ch < 0x20 && *ch != '\n' && *ch != '\t') ||
+                            *ch == 0x7f) {
+                            *ch = '?';
+                        }
+                    }
+                    fprintf(stdout, "%s\n", message);
+                    SAFE_FREE(message);
+                    SAFE_FREE(language);
+                    continue;
+                }
 
             case SSH_MSG_USERAUTH_SUCCESS:
-                // LAB: insert your code here.
+                if (ssh_buffer_get_len(session->in_buffer) != 0) {
+                    ssh_set_error(SSH_FATAL, "invalid authentication success packet\n");
+                    goto error;
+                }
+                cnt = 0;
+                LOG_NOTICE("password authentication succeeded");
+                return SSH_OK;
 
             case SSH_MSG_USERAUTH_PASSWD_CHANGEREQ:
             case SSH_MSG_USERAUTH_FAILURE:
-                // LAB: insert your code here.
+                {
+                    if (type == SSH_MSG_USERAUTH_PASSWD_CHANGEREQ) {
+                        ssh_set_error(SSH_REQUEST_DENIED,
+                                      "server requires a password change; unsupported\n");
+                        goto error;
+                    }
+
+                    char *methods = NULL;
+                    uint8_t partial_success;
+                    rc = ssh_buffer_unpack(session->in_buffer, "sb",
+                                           &methods, &partial_success);
+                    if (rc != SSH_OK) {
+                        ssh_set_error(SSH_FATAL, "invalid authentication failure packet\n");
+                        goto error;
+                    }
+
+                    bool can_retry_password = false;
+                    const char *method = methods;
+                    while (*method != '\0') {
+                        size_t len = strcspn(method, ",");
+                        if (len == sizeof("password") - 1 &&
+                            memcmp(method, "password", len) == 0) {
+                            can_retry_password = true;
+                            break;
+                        }
+                        method += len;
+                        if (*method == '\0') break;
+                        ++method;
+                    }
+                    SAFE_FREE(methods);
+
+                    if (partial_success) {
+                        ssh_set_error(SSH_REQUEST_DENIED,
+                                      "server requires another authentication step; unsupported\n");
+                        goto error;
+                    }
+                    if (!can_retry_password) {
+                        ssh_set_error(SSH_REQUEST_DENIED,
+                                      "server does not allow another password attempt\n");
+                        goto error;
+                    }
+                    if (++cnt >= 3) {
+                        ssh_set_error(SSH_REQUEST_DENIED,
+                                      "password authentication failed after three attempts\n");
+                        goto error;
+                    }
+
+                    ssh_set_error(SSH_REQUEST_DENIED, "password rejected; try again\n");
+                    return SSH_AGAIN;
+                }
 
             default:
-                // LAB: insert your code here.
+                if (type == SSH_MSG_IGNORE || type == SSH_MSG_DEBUG) {
+                    continue;
+                }
+                if (type == SSH_MSG_DISCONNECT) {
+                    ssh_set_error(SSH_REQUEST_DENIED,
+                                  "server disconnected during authentication\n");
+                    goto error;
+                }
+                ssh_set_error(SSH_FATAL, "unexpected authentication message: %u\n",
+                              (unsigned int)type);
+                goto error;
 
         }
     }
