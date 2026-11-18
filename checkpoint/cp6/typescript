@@ -1,0 +1,31 @@
+Script started on Wed Nov 18 16:41:00 2026
+[local shell startup omitted]
+
+$ shasum -a 256 "$CP6_REPO/client.c"
+eb6cdf34ccacc744fc549e610cb7c75df340aa938c2c79ad8abd4ffc01b57428  $CP6_REPO/client.c
+$ stty -echo && "$CP6_REPO/build/cp6-notice/client" username@127.0.0.1; stty echo
+16:41:32:339544   [NOTICE] receive_id_str (session.c:238) - server identification: SSH-2.0-OpenSSH_10.5
+16:41:32:4295315531   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 0: diffie-hellman-group14-sha256
+16:41:32:4295315552   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 1: ssh-rsa
+16:41:32:4295315566   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 2: aes256-ctr
+16:41:32:4295315579   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 3: aes256-ctr
+16:41:32:4295315592   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 4: hmac-sha1
+16:41:32:4295315609   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 5: hmac-sha1
+16:41:32:4295315621   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 6: none
+16:41:32:4295315634   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 7: none
+16:41:32:8590282943   [NOTICE] ssh_connect (session.c:323) - kex negotiation succeed
+password: 16:41:40:4295731298   [NOTICE] ssh_userauth_password (auth.c:154) - password authentication succeeded
+16:41:40:4295738456   [NOTICE] channel_open (channel.c:121) - channel opened: local=1 window=64000 maxpacket=32768; remote=0 window=0 maxpacket=32768
+16:41:40:4295738850   [NOTICE] channel_request (channel.c:267) - remote window adjust to 2097152
+sftp> Enter filename: client.c uploaded to the remote home directory
+sftp> Enter filename: client.c downloaded to the current working direcrtory
+sftp> Disconnect
+16:42:30:4295189346   [NOTICE] ssh_channel_close (channel.c:781) - received code 98 during channel close
+16:42:30:4295189417   [NOTICE] ssh_channel_close (channel.c:781) - received code 97 during channel close
+$ shasum -a 256 "$CP6_REPO/client.c" "$HOME/client.c" ./client.c
+eb6cdf34ccacc744fc549e610cb7c75df340aa938c2c79ad8abd4ffc01b57428  $CP6_REPO/client.c
+eb6cdf34ccacc744fc549e610cb7c75df340aa938c2c79ad8abd4ffc01b57428  $HOME/client.c
+eb6cdf34ccacc744fc549e610cb7c75df340aa938c2c79ad8abd4ffc01b57428  ./client.c
+$ exit
+
+Script done on Wed Nov 18 16:42:46 2026

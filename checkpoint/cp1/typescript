@@ -1,0 +1,28 @@
+Script started on Wed Nov 18 15:45:46 2026
+[local shell startup omitted]
+
+$ ./build/client username@127.0.0.1
+15:45:57:8590305021    [DEBUG] ssh_connect (session.c:273) - connected to server by fd 3
+15:45:57:4295337987    [DEBUG] ssh_connect (session.c:283) - client id sent
+15:45:57:387735   [NOTICE] receive_id_str (session.c:238) - server identification: SSH-2.0-OpenSSH_10.5
+15:45:57:8590325251    [DEBUG] ssh_packet_send (packet.c:405) - packet: wrote [type=20, len=156, padding_size=11,payload=144]
+15:45:57:390711    [DEBUG] ssh_packet_receive (packet.c:317) - packet: received [type=20, len=228, padding_size=9,payload=218]
+15:45:57:4295358031   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 0: diffie-hellman-group14-sha256
+15:45:57:4295358046   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 1: ssh-rsa
+15:45:57:4295358060   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 2: aes256-ctr
+15:45:57:4295358073   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 3: aes256-ctr
+15:45:57:4295358086   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 4: hmac-sha1
+15:45:57:4295358099   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 5: hmac-sha1
+15:45:57:4295358112   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 6: none
+15:45:57:4295358125   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 7: none
+15:45:57:4295358138   [NOTICE] ssh_connect (session.c:323) - kex negotiation succeed
+15:45:57:8590325984    [DEBUG] ssh_packet_send (packet.c:405) - packet: wrote [type=30, len=268, padding_size=5,payload=262]
+15:45:57:8590332557    [DEBUG] ssh_packet_receive (packet.c:317) - packet: received [type=31, len=1084, padding_size=7,payload=1076]
+15:45:57:523986408739    [DEBUG] ssh_packet_send (packet.c:405) - packet: wrote [type=21, len=12, padding_size=10,payload=1]
+15:45:57:4295365937    [DEBUG] ssh_packet_receive (packet.c:317) - packet: received [type=21, len=12, padding_size=10,payload=1]
+15:45:57:4295365961    [DEBUG] ssh_packet_send (packet.c:405) - packet: wrote [type=5, len=28, padding_size=10,payload=17]
+15:45:57:4295366008    [DEBUG] ssh_packet_receive (packet.c:317) - packet: received [type=6, len=28, padding_size=10,payload=17]
+password: 
+$ exit
+
+Script done on Wed Nov 18 15:46:07 2026

@@ -1,0 +1,56 @@
+Script started on Wed Nov 18 16:11:06 2026
+Command: /bin/sh -c 
+  printf "Source HEAD: "
+  git rev-parse --short HEAD || exit 1
+  git status --short --untracked-files=no || exit 1
+  stty -echo || exit 1
+  printf "Running: ./build/client username@127.0.0.1\n"
+  exec ./build/client username@127.0.0.1
+
+Source HEAD: b59138e
+ M checkpoint/README.md
+Running: ./build/client username@127.0.0.1
+16:11:06:8590664759    [DEBUG] ssh_connect (session.c:273) - connected to server by fd 3
+16:11:06:4295697579    [DEBUG] ssh_connect (session.c:283) - client id sent
+16:11:06:749328   [NOTICE] receive_id_str (session.c:238) - server identification: SSH-2.0-OpenSSH_10.5
+16:11:06:8590694309    [DEBUG] ssh_packet_send (packet.c:405) - packet: wrote [type=20, len=156, padding_size=11,payload=144]
+16:11:06:759737    [DEBUG] ssh_packet_receive (packet.c:317) - packet: received [type=20, len=228, padding_size=9,payload=218]
+16:11:06:4295727050   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 0: diffie-hellman-group14-sha256
+16:11:06:532576704468   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 1: ssh-rsa
+16:11:06:532576704479   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 2: aes256-ctr
+16:11:06:532576704497   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 3: aes256-ctr
+16:11:06:532576704507   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 4: hmac-sha1
+16:11:06:532576704517   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 5: hmac-sha1
+16:11:06:532576704527   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 6: none
+16:11:06:532576704537   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 7: none
+16:11:06:4295727140   [NOTICE] ssh_connect (session.c:323) - kex negotiation succeed
+16:11:06:8590694905    [DEBUG] ssh_packet_send (packet.c:405) - packet: wrote [type=30, len=268, padding_size=6,payload=261]
+16:11:06:8590699712    [DEBUG] ssh_packet_receive (packet.c:317) - packet: received [type=31, len=1084, padding_size=8,payload=1075]
+16:11:06:4295733632    [DEBUG] ssh_packet_send (packet.c:405) - packet: wrote [type=21, len=12, padding_size=10,payload=1]
+16:11:06:4295733645    [DEBUG] ssh_packet_receive (packet.c:317) - packet: received [type=21, len=12, padding_size=10,payload=1]
+16:11:06:4295733702    [DEBUG] ssh_packet_send (packet.c:405) - packet: wrote [type=5, len=28, padding_size=10,payload=17]
+16:11:06:4295733759    [DEBUG] ssh_packet_receive (packet.c:317) - packet: received [type=6, len=28, padding_size=10,payload=17]
+password: 16:11:18:31124    [DEBUG] ssh_packet_send (packet.c:405) - packet: wrote [type=50; length fields omitted]
+16:11:18:4295244498    [DEBUG] ssh_packet_receive (packet.c:317) - packet: received [type=52, len=12, padding_size=10,payload=1]
+16:11:18:4295244529   [NOTICE] ssh_userauth_password (auth.c:154) - password authentication succeeded
+16:11:18:277407    [DEBUG] ssh_packet_send (packet.c:405) - packet: wrote [type=90, len=44, padding_size=19,payload=24]
+16:11:18:4295252365    [DEBUG] ssh_packet_receive (packet.c:317) - packet: received [type=80, len=460, padding_size=19,payload=440]
+16:11:18:64424794528    [DEBUG] ssh_packet_receive (packet.c:317) - packet: received [type=91, len=28, padding_size=10,payload=17]
+16:11:18:4295252394   [NOTICE] channel_open (channel.c:121) - channel opened: local=1 window=64000 maxpacket=32768; remote=0 window=0 maxpacket=32768
+16:11:18:285118    [DEBUG] ssh_packet_send (packet.c:405) - packet: wrote [type=98, len=44, padding_size=16,payload=27]
+16:11:18:4295252751    [DEBUG] ssh_packet_receive (packet.c:317) - packet: received [type=93, len=28, padding_size=18,payload=9]
+16:11:18:4295252767   [NOTICE] channel_request (channel.c:267) - remote window adjust to 2097152
+16:11:18:285483    [DEBUG] ssh_packet_receive (packet.c:317) - packet: received [type=99, len=12, padding_size=6,payload=5]
+16:11:18:285505    [DEBUG] ssh_packet_send (packet.c:405) - packet: wrote [type=94, len=28, padding_size=9,payload=18]
+16:11:18:285943    [DEBUG] ssh_packet_receive (packet.c:317) - packet: received [type=94, len=348, padding_size=16,payload=331]
+16:11:18:8590220545    [DEBUG] sftp_packet_read (sftp.c:553) - sftp packet size: 317
+sftp> Disconnect
+16:11:26:532576270537    [DEBUG] ssh_packet_send (packet.c:405) - packet: wrote [type=96, len=12, padding_size=6,payload=5]
+16:11:26:4295293250    [DEBUG] ssh_packet_send (packet.c:405) - packet: wrote [type=97, len=12, padding_size=6,payload=5]
+16:11:26:4295294902    [DEBUG] ssh_packet_receive (packet.c:317) - packet: received [type=98, len=44, padding_size=18,payload=25]
+16:11:26:4295294951   [NOTICE] ssh_channel_close (channel.c:781) - received code 98 during channel close
+16:11:26:327693    [DEBUG] ssh_packet_receive (packet.c:317) - packet: received [type=97, len=12, padding_size=6,payload=5]
+16:11:26:4295295023   [NOTICE] ssh_channel_close (channel.c:781) - received code 97 during channel close
+
+Command exit status: 0
+Script done on Wed Nov 18 16:11:26 2026

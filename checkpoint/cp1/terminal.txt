@@ -1,0 +1,9 @@
+./build/client username@127.0.0.1
+15:32:03:8590247108    [DEBUG] ssh_connect (session.c:273) - connected to server by fd 3
+15:32:03:4295280233    [DEBUG] ssh_connect (session.c:283) - client id sent
+15:32:03:367731   [NOTICE] receive_id_str (session.c:238) - server identification: SSH-2.0-OpenSSH_10.5
+15:32:03:8590308131    [DEBUG] ssh_packet_send (packet.c:405) - packet: wrote [type=20, len=156, padding_size=11,payload=144]
+15:32:03:373616    [DEBUG] ssh_packet_receive (packet.c:317) - packet: received [type=20, len=1036, padding_size=9,payload=1026]
+15:32:03:4295340948    [ERROR] ssh_select_kex (kex.c:267) - server does not offer diffie-hellman-group14-sha256 for KEX field 0
+15:32:03:4295340975    [ERROR] ssh_connect (session.c:319) - can not select an agreed cipher suite
+REQUEST DENIED: ssh connection failed

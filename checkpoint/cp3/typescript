@@ -1,0 +1,37 @@
+Script started on Wed Nov 18 15:57:19 2026
+[local shell startup omitted]
+
+$ ./build/client username@127.0.0.1
+15:57:30:8590394169    [DEBUG] ssh_connect (session.c:273) - connected to server by fd 3
+15:57:30:4295427163    [DEBUG] ssh_connect (session.c:283) - client id sent
+15:57:30:488964   [NOTICE] receive_id_str (session.c:238) - server identification: SSH-2.0-OpenSSH_10.5
+15:57:30:8590431271    [DEBUG] ssh_packet_send (packet.c:405) - packet: wrote [type=20, len=156, padding_size=11,payload=144]
+15:57:30:496700    [DEBUG] ssh_packet_receive (packet.c:317) - packet: received [type=20, len=228, padding_size=9,payload=218]
+15:57:30:4295464012   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 0: diffie-hellman-group14-sha256
+15:57:30:4295464025   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 1: ssh-rsa
+15:57:30:4295464037   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 2: aes256-ctr
+15:57:30:4295464049   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 3: aes256-ctr
+15:57:30:4295464061   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 4: hmac-sha1
+15:57:30:4295464073   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 5: hmac-sha1
+15:57:30:4295464084   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 6: none
+15:57:30:4295464096   [NOTICE] ssh_select_kex (kex.c:273) - negotiated KEX field 7: none
+15:57:30:4295464107   [NOTICE] ssh_connect (session.c:323) - kex negotiation succeed
+15:57:30:8590431918    [DEBUG] ssh_packet_send (packet.c:405) - packet: wrote [type=30, len=268, padding_size=5,payload=262]
+15:57:30:8590437753    [DEBUG] ssh_packet_receive (packet.c:317) - packet: received [type=31, len=1084, padding_size=8,payload=1075]
+15:57:30:4295471433    [DEBUG] ssh_packet_send (packet.c:405) - packet: wrote [type=21, len=12, padding_size=10,payload=1]
+15:57:30:4295471445    [DEBUG] ssh_packet_receive (packet.c:317) - packet: received [type=21, len=12, padding_size=10,payload=1]
+15:57:30:4295471478    [DEBUG] ssh_packet_send (packet.c:405) - packet: wrote [type=5, len=28, padding_size=10,payload=17]
+15:57:30:4295471513    [DEBUG] ssh_packet_receive (packet.c:317) - packet: received [type=6, len=28, padding_size=10,payload=17]
+password: 
+$ tshark -r checkpoint/cp3/loopback.pcap \
+    -Y 'tcp.stream == 0 && (ssh.message_code == 21 || ssh.encrypted_packet)' \
+    -T fields -E header=y -e frame.number -e tcp.stream \
+    -e tcp.srcport -e tcp.dstport -e ssh.message_code -e _ws.col.Info
+
+frame.number	tcp.stream	tcp.srcport	tcp.dstport	ssh.message_code	_ws.col.info
+15	0	22	56954	31,21	Server: Diffie-Hellman Key Exchange Reply, New Keys
+17	0	56954	22	21	Client: New Keys
+19	0	56954	22		Client: Encrypted packet (len=52)
+21	0	22	56954		Server: Encrypted packet (len=52)
+$ exit
+Script done on Wed Nov 18 16:05:59 2026
