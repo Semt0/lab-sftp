@@ -597,8 +597,21 @@ static int dh_receive_reply(ssh_session session) {
     }
 
     /* Skip: check server public key */
-    /* Waht should we do next? */
-    // LAB: insert your code here.
+    /* What should we do next? */
+    bignum upper_bound = BN_dup(crypto->dh_ctx->modulus);
+    if (upper_bound == NULL) return SSH_ERROR;
+    bool valid_public_value = BN_sub_word(upper_bound, 1) == 1 &&
+                              bignum_cmp(server_pubkey, BN_value_one()) > 0 &&
+                              bignum_cmp(server_pubkey, upper_bound) < 0;
+    bignum_safe_free(upper_bound);
+    if (!valid_public_value) return SSH_ERROR;
+
+    rc = dh_compute_shared_secret(crypto->dh_ctx, DH_CLIENT_KEYPAIR,
+                                  DH_SERVER_KEYPAIR, &crypto->shared_secret);
+    if (rc != SSH_OK) return rc;
+
+    rc = dh_compute_session_id(session);
+    if (rc != SSH_OK) return rc;
 
 
     /* Skip: verifies signature on H (session id) */
@@ -635,7 +648,8 @@ static int dh_set_new_keys(ssh_session session) {
     if (type != SSH_MSG_NEWKEYS) return SSH_ERROR;
 
     /* NEWKEYS received, now its time to activate encryption */
-    // LAB: insert your code here.
+    crypto->used = SSH_DIRECTION_BOTH;
+    session->current_crypto = crypto;
 
 
     /* next_crypto should be deprecated from now if re-kex is not supportes */
