@@ -140,7 +140,7 @@ int ssh_send_kex(ssh_session session) {
     if (rc != SSH_OK) goto error;
 
     if (ssh_packet_send(session) != SSH_OK)
-        return SSH_ERROR;  // TODO: or goto error
+        goto error;
     return SSH_OK;
 
 error:
@@ -184,8 +184,19 @@ int ssh_receive_kex(ssh_session session) {
 
     for (int i = 0; i < SSH_KEX_METHODS; i++) {
         /* parse name-lists, don't forget to add `in_hashbuf` */
-        // LAB: insert your code here.
+        str = ssh_buffer_get_ssh_string(session->in_buffer);
+        if (str == NULL) goto error;
 
+        strings[i] = ssh_string_to_char(str);
+        if (strings[i] == NULL || strlen(strings[i]) != ssh_string_len(str)) {
+            goto error;
+        }
+        if (ssh_buffer_add_ssh_string(session->in_hashbuf, str) != SSH_OK) {
+            goto error;
+        }
+
+        ssh_string_free(str);
+        str = NULL;
     }
 
     rc = ssh_buffer_unpack(session->in_buffer, "bd", &first_kex_follows,
@@ -229,8 +240,37 @@ int ssh_select_kex(ssh_session session) {
 
     for (int i = 0; i < SSH_KEX_METHODS; ++i) {
         /* select negotiated algorithms and store them in `next_crypto->kex_methods` */
-        // LAB: insert your code here.
+        const char *wanted = client->methods[i];
+        const char *offered = server->methods[i];
+        if (wanted == NULL || offered == NULL) goto error;
 
+        if (i == SSH_LANG_C_S || i == SSH_LANG_S_C) {
+            session->next_crypto->kex_methods[i] = strdup("");
+            if (session->next_crypto->kex_methods[i] == NULL) goto error;
+            continue;
+        }
+
+        size_t wanted_len = strlen(wanted);
+        bool matched = false;
+        while (*offered != '\0') {
+            size_t offered_len = strcspn(offered, ",");
+            if (offered_len == wanted_len &&
+                memcmp(offered, wanted, wanted_len) == 0) {
+                matched = true;
+                break;
+            }
+            offered += offered_len;
+            if (*offered == '\0') break;
+            ++offered;
+        }
+        if (!matched) {
+            LOG_ERROR("server does not offer %s for KEX field %d", wanted, i);
+            goto error;
+        }
+
+        session->next_crypto->kex_methods[i] = strdup(wanted);
+        if (session->next_crypto->kex_methods[i] == NULL) goto error;
+        LOG_NOTICE("negotiated KEX field %d: %s", i, wanted);
     }
     session->next_crypto->kex_type = SSH_KEX_DH_GROUP14_SHA256;
     return SSH_OK;
